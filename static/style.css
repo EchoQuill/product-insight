@@ -1,0 +1,134 @@
+body {
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    background-color: #1e1b18;
+    color: #f2e8cf;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+nav {
+    width: 100%;
+}
+
+.nav-area {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    color: #6e5d37;
+    background-color: rgba(30, 27, 24, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.nav-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 12px 0;
+}
+
+.support {
+    display: flex;
+    align-items: center;
+}
+
+.icon {
+    height: 30px;
+    margin-right: 10px;
+    transition: all 0.15s ease;
+}
+
+.icon:hover {
+    height: 40px;
+    background-color: rgba(58, 50, 17, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 10px rgba(58, 50, 17, 0.5); /* out */
+}
+
+
+.main-content-container {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.main-content-container > .section-area {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-left: 2px;
+    margin-right: 2px;
+    min-width: 384px;
+}
+
+.main-content-container > * {
+    margin: 8px;
+}
+
+.section-area {
+    background-color: rgba(40, 35, 30, 0.5);
+    height: 350px;
+    border-radius: 15px;
+    border: 1px solid rgba(210, 166, 121, 0.25);
+    padding: 15px;
+    transition: all 0.15s ease;
+    box-shadow: 0 0 10px rgba(100, 80, 50, 0.15);
+}
+
+.section-area h2 {
+    color: #f5f0e6;
+    border-bottom: 1px solid #d2a679;
+    text-align: left;
+    padding-bottom: 10px;
+    font-size: 18px;
+}
+
+.section-area img {
+    height: 270px;
+    width: 210px;
+    border-radius: 10px;
+}
+
+.section-area:hover {
+    border: 2px solid rgba(210, 166, 121, 0.5);
+    transform: translateY(-4px);
+}
+
+.section-area:hover h2 {
+    color: #ffffff;
+}
+
+.section-area-wrapper {
+    display: flex;
+    flex-direction: row;
+}
+
+.item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /*border: 1px solid blue;*/
+}
+
+
+/* Mobile Tweaks */
+@media (max-width: 768px) {
+    .section-area img {
+        height: 200px;
+        width: 160px;
+    }
+    .main-content-container > .section-area {
+        min-width: 300px;
+    }
+}

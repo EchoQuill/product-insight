@@ -1,0 +1,14 @@
+{
+    "website": {
+        "hostMode": true,
+        "port": 1200
+    },
+    "title": "Shop :>",
+    "base_url": "https://www.amazon.in/dp/",
+    "urls_dp_code": [
+        "B07JQFQK7S",
+        "B0BVMLZ2WH",
+        "9386473429",
+        "8172932065"
+    ]
+}
