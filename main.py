@@ -4,8 +4,8 @@ import os
 import logging
 import sys
 import sqlite3
-import rich
 import json
+import re
 from flask import Flask, jsonify, render_template, request
 
 
@@ -69,7 +69,37 @@ def update_database(db_path="utils/amazon_db.sqlite"):
 
     for dp_code in config["urls_dp_code"]:
         url = base_url+dp_code
-        
+        result_dict = amazon_fetcher.fetch_start_pg(url)
+
+        c.execute(
+            "UPDATE amazon_fetches SET image_url = ?, image_alt = ?, rating = ?, price_cut = ?, price = ? WHERE dp_key = ?",
+            (result_dict["image"]["url"], result_dict["image"]["alt"], result_dict["rating"], result_dict["pricecut"], result_dict["price"], dp_code)
+        )
+
+        # My eyes hurt looking at this lol
+        c.execute(
+            """
+            UPDATE star_info
+            SET total_rating = ?, 
+                one = ?, two = ?, three = ?, four = ?, five = ?,
+                one_percentage = ?, two_percentage = ?, three_percentage = ?, four_percentage = ?, five_percentage = ?
+            WHERE dp_key = ?
+            """,
+            (
+                result_dict["stars"]["total_rating"],
+                result_dict["stars"]["1"]["stars"],
+                result_dict["stars"]["2"]["stars"],
+                result_dict["stars"]["3"]["stars"],
+                result_dict["stars"]["4"]["stars"],
+                result_dict["stars"]["5"]["stars"],
+                result_dict["stars"]["1"]["percentage"],
+                result_dict["stars"]["2"]["percentage"],
+                result_dict["stars"]["3"]["percentage"],
+                result_dict["stars"]["4"]["percentage"],
+                result_dict["stars"]["5"]["percentage"],
+                dp_code
+            )
+        )
 
 
 def populate_database(db_path="utils/amazon_db.sqlite"):
@@ -78,7 +108,7 @@ def populate_database(db_path="utils/amazon_db.sqlite"):
     c = conn.cursor()
 
     for dp_code in config["urls_dp_code"]:
-        c.execute("INSERT OR IGNORE INTO amazon_fetches (dp_key, image_url, image_alt, rating, price_cut, price) VALUES (?, ?, ?, ?, ?, ?)", (dp_code, None, None, None, None, None))
+        c.execute("INSERT OR IGNORE INTO amazon_fetches (dp_key, image_url, image_alt, rating, price_cut, price) VALUES (?, ?, ?, ?, ?, ?)", (dp_code, None, None, 0, None, None))
         c.execute("INSERT OR IGNORE INTO star_info (dp_key, one, two, three, four, five) VALUES (?, ?, ?, ?, ?, ?)", (dp_code, 0, 0, 0, 0, 0))
 
     conn.commit()
@@ -98,9 +128,9 @@ def create_database(db_path="utils/amazon_db.sqlite"):
             dp_key TEXT PRIMARY KEY,
             image_url TEXT,
             image_alt TEXT,
-            rating TEXT,
+            rating REAL,
             price_cut TEXT,
-            price INTEGER
+            price REAL
         )
     """)
 
@@ -120,11 +150,17 @@ def create_database(db_path="utils/amazon_db.sqlite"):
     c.execute("""
         CREATE TABLE IF NOT EXISTS star_info (
             dp_key TEXT PRIMARY KEY,
+            total_rating INTEGER,
             one INTEGER,
             two INTEGER,
             three INTEGER,
             four INTEGER,
-            five INTEGER
+            five INTEGER,
+            one_percentage REAL,
+            two_percentage REAL,
+            three_percentage REAL,
+            four_percentage REAL,
+            five_percentage REAL
         )
     """)
 
