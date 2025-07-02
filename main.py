@@ -1,11 +1,11 @@
 import utils.amazon_fetcher as amazon_fetcher
 import utils.log as log
-import os
 import logging
 import sys
 import sqlite3
 import json
-import re
+import time
+import random
 from flask import Flask, jsonify, render_template, request
 
 
@@ -62,6 +62,31 @@ def web_start():
         host="0.0.0.0" if config["website"]["hostMode"] else None
     )
 
+def generate_really_random_and_top_secret_uuid():
+    # Insane code right? ;>
+
+    """
+    Since we are going to be hosting this, we can't rely on time.time()
+    as the time used in hosts `may` be changing or random and so on. can't predict it!
+
+    I decided to use `time.monotonic()` but that is session sepecific only
+    solution i could think of was to have a random key to ensure that the code knows incase of restarts
+    which is common to happen with free hosts every now and then.
+    """
+
+    rand_key_1 = random.choice(["cat", "echo", "dawn", "dusk", "dim", "sch", "in"])
+    rand_key_2 = random.choice(["dog", "quill", "morning", "night", "bright", "hcs", "ni"])
+    rand_num = str(random.randint(100,1000000))
+    const_phrase = "-Amzn-Scrapper-Proj"
+
+    uuid = rand_key_1 + rand_key_2 + rand_num + const_phrase
+
+    return uuid
+
+# --------
+
+"""Database Management"""
+
 def update_database(db_path="utils/amazon_db.sqlite"):
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
@@ -72,8 +97,11 @@ def update_database(db_path="utils/amazon_db.sqlite"):
         result_dict = amazon_fetcher.fetch_start_pg(url)
 
         c.execute(
-            "UPDATE amazon_fetches SET image_url = ?, image_alt = ?, rating = ?, price_cut = ?, price = ? WHERE dp_key = ?",
-            (result_dict["image"]["url"], result_dict["image"]["alt"], result_dict["rating"], result_dict["pricecut"], result_dict["price"], dp_code)
+            """
+            UPDATE amazon_fetches SET image_url = ?, image_alt = ?, rating = ?, price_cut = ?, price = ?, last_fetched = ?, uuid = ? 
+            WHERE dp_key = ?
+            """,
+            (result_dict["image"]["url"], result_dict["image"]["alt"], result_dict["rating"], result_dict["pricecut"], result_dict["price"], time.monotonic(), UUID, dp_code)
         )
 
         # My eyes hurt looking at this lol
@@ -101,6 +129,20 @@ def update_database(db_path="utils/amazon_db.sqlite"):
             )
         )
 
+        for item in result_dict["reviews"]:
+            c.execute(
+                """
+                INSERT OR IGNORE INTO reviews
+                (dp_key, user, text)
+                VALUES
+                (?, ?, ?)
+                """,
+                (dp_code, item["user"], item["text"])
+            )
+            
+    conn.commit()
+    conn.close()
+    log.customPrint(f"Database have been updated with latest fetched data!", "soft_purple")
 
 def populate_database(db_path="utils/amazon_db.sqlite"):
     log.customPrint("Populating database...", "plum")
@@ -108,7 +150,7 @@ def populate_database(db_path="utils/amazon_db.sqlite"):
     c = conn.cursor()
 
     for dp_code in config["urls_dp_code"]:
-        c.execute("INSERT OR IGNORE INTO amazon_fetches (dp_key, image_url, image_alt, rating, price_cut, price) VALUES (?, ?, ?, ?, ?, ?)", (dp_code, None, None, 0, None, None))
+        c.execute("INSERT OR IGNORE INTO amazon_fetches (dp_key, image_url, image_alt, rating, price_cut, price, last_fetched, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (dp_code, None, None, 0, None, None, None, None))
         c.execute("INSERT OR IGNORE INTO star_info (dp_key, one, two, three, four, five) VALUES (?, ?, ?, ?, ?, ?)", (dp_code, 0, 0, 0, 0, 0))
 
     conn.commit()
@@ -130,7 +172,9 @@ def create_database(db_path="utils/amazon_db.sqlite"):
             image_alt TEXT,
             rating REAL,
             price_cut TEXT,
-            price REAL
+            price REAL,
+            last_fetched REAL,
+            uuid TEXT
         )
     """)
 
@@ -141,6 +185,7 @@ def create_database(db_path="utils/amazon_db.sqlite"):
             dp_key TEXT,
             user TEXT,
             text TEXT,
+            UNIQUE(dp_key, user, text),
             FOREIGN KEY(dp_key) REFERENCES amazon_fetches(dp_key)
         )
     """)
@@ -174,12 +219,17 @@ def create_database(db_path="utils/amazon_db.sqlite"):
     conn.commit()
     conn.close()
 
-    log.customPrint(f"Created database! - {db_path}", "lilac")
+    log.customPrint(f"Ensured database is created! - {db_path}", "lilac")
+
+# ---------------
 
 if __name__ == "__main__":
+    UUID = generate_really_random_and_top_secret_uuid()
+
     # Create a database
     create_database()
     populate_database()
+    update_database()
     # start site
     web_start()
 
