@@ -1,9 +1,18 @@
 from curl_cffi import requests
 from bs4 import BeautifulSoup as bsoup
 
-import log
 import re
 import math
+
+
+"""
+TASKS:
+
+1) Fetch further details from product title and description
+2) Fetch `product details` area and provide further details on it
+3) Actually update frontend to reflect these changes lol.
+"""
+
 
 # Curl_cffi is a life saver really, helped bypass amazon request block thingy successfully!
 # I thought I would have to use selenium or similar, but thankfully not! otherwise would have had to cancel this project
@@ -143,6 +152,10 @@ def fetch_start_pg(url):
     log.customPrint(f"Fetch Initialised 🏁 ({url})", "light_green")
     res = requests.get(url, headers=global_headers, impersonate="chrome120")
 
+    """
+    <span id="productTitle" class="a-size-large celwidget" data-csa-c-id="m7zfzy-ejojfm-f0v3ks-i3dw6a" data-cel-widget="productTitle">  Bengali Contemporary Classic Fiction Book | SUBARNOLATA | Ashapoorna Devi [Hardcover] Ashapoorna Devi [Hardcover] Ashapoorna Devi </span>
+    """
+
     if "To discuss automated access" in res.text:
         log.customPrint(f"Fetch failed successfully! 🤭 Returning None. ({url})", "light_red")
         return None
@@ -155,6 +168,7 @@ def fetch_start_pg(url):
     total_rating = total_rating.text.strip() if total_rating else None
     image = soup.select_one('#landingImage')
     price_cut_per = soup.select_one('.savingsPercentage')
+    title = soup.select_one('#productTitle')
 
 
     temp = rating.text.strip()
@@ -174,7 +188,7 @@ def fetch_start_pg(url):
     reviews = get_reviews(review_blocks)
 
     result_dict = {
-        "title": None,
+        "title": title.text.strip() if title else None,
         "description": None,
         "price": float(price.text.strip()) if price else None,
         "rating": rating if rating else None,
@@ -194,5 +208,8 @@ def fetch_start_pg(url):
 
     
 if __name__ == "__main__":
+    import log
     print(fetch_start_pg("https://www.amazon.in/dp/9386473429"))
     #print(calculate_star_int_per_tier(22, 6))
+else:
+    from . import log
